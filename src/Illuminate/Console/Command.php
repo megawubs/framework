@@ -180,6 +180,12 @@ class Command extends SymfonyCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $valid = $this->valid();
+
+        if($valid === false){
+            return;
+        }
+
         return $this->laravel->call([$this, 'handle']);
     }
 
@@ -592,5 +598,27 @@ class Command extends SymfonyCommand
     public function setLaravel($laravel)
     {
         $this->laravel = $laravel;
+    }
+
+    /**
+     * Validate
+     */
+    private function valid()
+    {
+        //don't validate when there are no rules
+        if(method_exists($this, 'rules') === false){
+            return true;
+        }
+
+        $all = array_merge($this->options(), $this->arguments());
+
+        $validator = validator($all, $this->rules());
+        if ($validator->fails()){
+            $messages = collect($validator->errors()->messages())->flatten()->implode("\n");
+            $this->info($messages);
+
+            return false;
+        }
+        return true;
     }
 }
